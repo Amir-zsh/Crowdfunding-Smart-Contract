@@ -1,9 +1,9 @@
 web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
-abi =[
+abi = [
     {
         "constant": true,
         "inputs": [],
-        "name": "goal",
+        "name": "totalSupply",
         "outputs": [
             {
                 "name": "",
@@ -102,7 +102,7 @@ abi =[
         "anonymous": false,
         "inputs": [
             {
-                "indexed": false,
+                "indexed": true,
                 "name": "_contributor",
                 "type": "address"
             },
@@ -125,18 +125,8 @@ abi =[
         "inputs": [
             {
                 "indexed": false,
-                "name": "_contributor",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "name": "_amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "name": "_amountRemaining",
-                "type": "uint256"
+                "name": "_canRefund",
+                "type": "bool"
             }
         ],
         "name": "DeadlineReached",
@@ -173,7 +163,7 @@ abi =[
                 "type": "address"
             },
             {
-                "name": "_goal",
+                "name": "_totalSupply",
                 "type": "uint256"
             },
             {
@@ -209,57 +199,62 @@ abi =[
     }
 ]
 var addresses = web3.eth.accounts;
-var deadline ,goal;
+var deadline, goal, temp;
 var $address, $value,
     $contribute_btn, $refund_btn,
     $sold_bar;
-
+var deadlineReachedEvent, contributionEvent, goalReachedEvent, contributionOnlyAddressEvent
 SimpleICOContract = web3.eth.contract(abi);
 // In your nodejs console, execute contractInstance.address to get the address at which the contract is deployed and change the line below to use your deployed address
-SimpleICOContract = SimpleICOContract.at('0x129d446cfb5d85e70ada3565572e6c25c24a62cf');
-// var dealineReachedEvent = SimpleICOContract.DeadlineReached({_sender: userAddress}, {fromBlock: 0, toBlock: 'latest'});
-var dealineReachedEvent = SimpleICOContract.DeadlineReached({});
-var contributionEvent = SimpleICOContract.Contribution({},{fromBlock: 0, toBlock: 'latest'});
-var goalReachedEvent = SimpleICOContract.GoalReached({});
-
-
-// $("input[type=submit]").attr("disabled", "disabled");
-// if (validated) $("input[type=submit]").removeAttr("disabled");
-//
-// function setHighestBid() {
-//     $highestBidder.val(uctionContract.highestBid.call().toString());
-//     $highestBidder.val(uctionContract.highestBidder.call().toString());
-// }
-
+SimpleICOContract = SimpleICOContract.at('0x19171df69139c358aaa879aaaf2592cf82bdf692');
+deadlineReachedEvent = SimpleICOContract.DeadlineReached({});
+contributionEvent = SimpleICOContract.Contribution({}, {fromBlock: 0, toBlock: 'latest'});
+goalReachedEvent = SimpleICOContract.GoalReached({});
 
 $(document).ready(function () {
-    // biddingEnd = parseInt(SimpleICOContract.biddingEnd.call().toString()) * 1000;
-    // revealEnd = parseInt(SimpleICOContract.revealEnd.call().toString()) * 1000;
-    goal =  parseInt(SimpleICOContract.goal.call().toString());
+    goal = parseInt(SimpleICOContract.goal.call().toString());
+    deadline = parseInt(SimpleICOContract.deadline.call().toString()) * 1000;
+    $timer = $("#timer");
     $address = $("#address");
     $value = $("#value");
     $contribute_btn = $("#contribution-btn");
     $refund_btn = $("#refund-btn");
     $sold_bar = $("#sold-bar");
     $address.empty();
-    $contribute_btn.click(function () {
-        SimpleICOContract.contribute({from: $address.val(), value: $value.val()}, function () {
-        });
-        console.log("cont")
-    })
-    $refund_btn.click(function () {
-        SimpleICOContract.refund({from: $address.val()}, function () {
-        });
-        console.log("ref")
-    });
-
     $.each(addresses, function (index, value) {
         $address.append($('<option/>', {
             value: value,
             text: value
         }));
     });
+    $address.change(function (e) {
+        if (contributionOnlyAddressEvent)
+            contributionOnlyAddressEvent.stopWatching();
+        contributionOnlyAddressEvent = SimpleICOContract.Contribution({_contributor: $(this).val()}, {
+            fromBlock: 0,
+            toBlock: 'latest'
+        });
+        $("#contributions-table > tbody").html("");
+        contributionOnlyAddressEvent.watch(function (err, result) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            setAsDone(result);
+        });
+    });
+    $address.change();
+    $contribute_btn.click(function () {
+        SimpleICOContract.contribute({from: $address.val(), value: $value.val()}, function (err, result) {
+            addRow(result, $address.val(), $value.val(), "Pending");
+        });
+    });
 
+    $refund_btn.click(function () {
+        SimpleICOContract.refund({from: $address.val()}, function () {
+        });
+        console.log("ref")
+    });
 // Update the count down every 1 second
 
 
@@ -268,61 +263,87 @@ $(document).ready(function () {
             console.log(err);
             return;
         }
-        addRow(result.args._contributor.toString(),result.args._amount.toString());
         updateProgressBar(result.args._amountRemaining.toString());
+        temp = result;
     });
-    dealineReachedEvent.watch(function (err, result) {
+    deadlineReachedEvent.watch(function (err, result) {
         if (err) {
             console.log(err)
             return;
         }
-        // addresses(result.args._contributor.toString(),result.args._amount.toString())
-        console.log(result);
-        // $reveal_btn.removeAttribute("disabled");
+        $refund_btn.removeAttr("disabled");
+        $status.removeClass("alert-success");
+        $status.addClass("alert-warning")
     });
     goalReachedEvent.watch(function (err, result) {
         if (err) {
-            console.log(err)
+            console.log(err);
             return;
         }
         window.alert("GOAL REACHED")
-        // addresses(result.args._contributor.toString(),result.args._amount.toString())
         console.log(result);
-        // $reveal_btn.removeAttribute("disabled");
     });
-    // var myResults = contributionEvent.get(function(error, logs){ console.log(logs) });
+    var x = setInterval(function () {
+
+        // Get todays date and time
+        var now = Math.floor(new Date().getTime());
+        // Find the distance between now an the count down date
+        var distance = deadline - now;
+        if (distance >= 0) {
+            // Time calculations for days, hours, minutes and seconds
+            var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Output the result in an element with id="demo"
+            $timer.html(days + ":" + hours + ":"
+                + minutes + ":" + seconds);
+        }
+        // If the count down is over, write some text
+        else {
+            clearInterval(x);
+        }
+
+    }, 1000);
 
 });
 
 
-function addRow(address, contribution) {
-    // $funder = $("#" + address);
-    // if ($funder.length) {
-    //     $funder.children().last().html(contribution);
-    // }
-    // else {
-        $('#contributions-table  > tbody:last-child').append('<tr id="'
-            + address
-            + '"><td>'
-            + address +
-            '</td><td>'
-            + contribution
-            + '</td></tr>');
-    // }
+function addRow(transactionHash, address, contribution, status) {
+    $('#contributions-table  > tbody:last-child').append('<tr id="'
+        + transactionHash
+        + '"><td>'
+        + address +
+        '</td><td>'
+        + contribution
+        + '</td>'
+        + '<td>' + status + '</td>'
+        + '</tr>');
+
 }
 
-function deleteRow(address,) {
-    var $funder = $("#" + address);
-    $funder.remove();
+
+function setAsDone(result) {
+    // temp.transactionHash,result.args._contributor.toString(), result.args._amount.toString()
+    hash = result.transactionHash
+    $transaction = $("#" + hash);
+    if ($transaction.length) {
+        $transaction.children().last().html("Done");
+    }
+    else {
+        contributor = result.args._contributor.toString()
+        amount = result.args._amount.toString()
+        addRow(hash, contributor, amount, "Done")
+    }
 }
 
-function updateProgressBar(amounRemaining){
-    console.log(amounRemaining);
+function updateProgressBar(amounRemaining) {
+    // console.log(amounRemaining);
     bar_width = 1 - parseInt(amounRemaining) / goal;
-    console.log(bar_width);
+    // console.log(bar_width);
     $sold_bar.animate({
-        width : (bar_width * 100) + "%"
-    },100,function(){
+        width: (bar_width * 100) + "%"
+    }, 100, function () {
     });
 }
-

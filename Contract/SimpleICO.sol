@@ -12,8 +12,8 @@ contract SimpleICO {
 
     mapping (address => uint) funders;
 
-    event Contribution(address _contributor, uint _amount, uint _amountRemaining);
-    event DeadlineReached(address _contributor, uint _amount, uint _amountRemaining);
+    event Contribution(address indexed _contributor, uint _amount, uint _amountRemaining);
+    event DeadlineReached(bool _canRefund);
     event GoalReached();
 
     modifier onlyAfter(uint _time) {
@@ -45,6 +45,10 @@ contract SimpleICO {
         // What if balance passes goal?
         Contribution(msg.sender, msg.value, goal - this.balance);
         if (this.balance > goal) GoalReached();
+        if (now > deadline) {
+            if (this.balance > goal) DeadlineReached(false);
+            else DeadlineReached(true);
+        }
     }
 
     function payout() onlyAfter(deadline) onlyIfGoalReached() {

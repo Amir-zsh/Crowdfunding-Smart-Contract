@@ -46,3 +46,14 @@
 .custome-container {
     padding-top: 5em;
 }
+
+#timer{
+
+}
+
+td, th{
+  text-align: center;
+}
+.status{
+    font-size: 2em;
+}
