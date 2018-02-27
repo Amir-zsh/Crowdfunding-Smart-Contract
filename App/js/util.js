@@ -1,6 +1,4 @@
-
-
-var deadline, goal, temp , timer;
+var deadline, goal, temp, timer, addresses;
 var $address, $value,
     $contribute_btn, $refund_btn,
     $sold_bar, $status;
@@ -15,13 +13,30 @@ $(document).ready(function () {
     $refund_btn = $("#refund-btn");
     $sold_bar = $("#sold-bar");
     $address.empty();
+
+    init();
+    timer = setInterval(countDown, 1000);
+    initAddresses(addresses);
+
+    $address.change(addressChanged);
+    $address.change();
+    $contribute_btn.click(function () {
+        var address = $address.val();
+        var amount =  $value.val();
+        contribute(address,amount);
+    });
+    $refund_btn.click(function () {
+        refund()
+    });
+
+
 });
 
 function addRow(transactionHash, address, contribution, status) {
     $('#contributions-table  > tbody:last-child').append('<tr id="'
         + transactionHash
         + '"><td>'
-        + address +
+        + transactionHash +
         '</td><td>'
         + contribution
         + '</td>'
@@ -52,7 +67,7 @@ function countDown() {
 
 }
 
-function setAsDone(hash,contributor,amout) {
+function setAsDone(hash, contributor, amount) {
     $transaction = $("#" + hash);
     if ($transaction.length) {
         $transaction.children().last().html("Done");
@@ -69,15 +84,16 @@ function updateProgressBar(amounRemaining) {
     }, 100, function () {
     });
 }
-function ICOFinished(canrRefund){
-    if (canrRefund){
+
+function ICOFinished(canrRefund) {
+    if (canrRefund) {
         $refund_btn.removeAttr("disabled");
         $status.removeClass("alert-info");
         $status.addClass("alert-danger");
         $status.html("Finished: Goal not Reached")
         refundPermission = true;
     }
-    else{
+    else {
         $status.removeClass("alert-info");
         $status.addClass("alert-success");
         $status.html("Finished: Goal Reached");
@@ -85,3 +101,16 @@ function ICOFinished(canrRefund){
     }
 }
 
+
+function emptyTable() {
+    $("#contributions-table > tbody").html("");
+}
+
+function initAddresses(addresses) {
+    $.each(addresses, function (index, value) {
+        $address.append($('<option/>', {
+            value: value,
+            text: value
+        }));
+    });
+}
