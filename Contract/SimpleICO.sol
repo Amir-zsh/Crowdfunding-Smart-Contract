@@ -2,20 +2,21 @@ pragma solidity ^0.4.0;
 
 
 contract SimpleICO {
-
-    address public beneficiary;
+    
     address public owner;
     uint public totalSupply;
     uint public goal;
+    uint public tokenPrice;
     uint public deadline;
     uint public totalFundersNum;
+    fixed public fake;
 
     mapping (address => uint) funders;
     mapping (address => uint) tokenBalance;
     
 
     event Contribution(address indexed _contributor, uint _amount, uint _amountRemaining);
-    event DeadlineReached(bool _canRefund);
+    event DeadlineReached();
     event GoalReached();
 
     modifier onlyAfter(uint _time) {
@@ -33,13 +34,18 @@ contract SimpleICO {
         _;
     }
     
-    function SimpleICO(address _beneficiary, uint _totalSupply, uint _goal, uint _deadline) {
+    function SimpleICO(uint _totalSupply, uint _goal, uint _deadline) {
         //totalSuply init added;
-        totalSupply = _totalSupply;
         owner = msg.sender;
-        beneficiary = _beneficiary;
+        totalSupply = _totalSupply;
+        tokenPrice = 10**16;
+        tokenBalance[owner] = totalSupply;
         goal = _goal*10**18;
         deadline = now + _deadline;
+    }
+    
+    function test() {
+        fake = 8 % 3;
     }
 
     function currentFunding() view returns (uint) {
@@ -47,24 +53,35 @@ contract SimpleICO {
     }
 
     function contribute() onlyBefore(deadline) payable {
-        require(this.balance < goal);
+        
+        // current this.balance is previous this.balance + msg.value at the begining of the function
+        require(this.balance - msg.value < goal);
         if(funders[msg.sender] == 0) totalFundersNum += 1;
         
-        uint contribuition_amount = msg.value;
-        funders[msg.sender] += contribuition_amount;
+        uint contributionAmount = msg.value;
         
         // What if balance passes goal?
+        uint extraAmount = 0;
         if (this.balance > goal) {
             GoalReached();
-            uint extra_amount = this.balance - goal;
-            msg.sender.transfer(extra_amount);
-            contribuition_amount = contribuition_amount - extra_amount;
+            extraAmount = this.balance - goal;
+            contributionAmount = contributionAmount - extraAmount;
         }
-        Contribution(msg.sender, contribuition_amount, goal - this.balance);
+        
+        uint remainder = contributionAmount % tokenPrice;
+        contributionAmount -= remainder;
+        uint purchasedTokens = contributionAmount / tokenPrice;
+        
+        extraAmount += remainder;
+        msg.sender.transfer(extraAmount);
+        
+        funders[msg.sender] += contributionAmount;
+        tokenBalance[msg.sender] += purchasedTokens;
+        Contribution(msg.sender, contributionAmount, goal - this.balance);
     }
-    
+
     function payout() onlyAfter(deadline) onlyIfGoalReached() {
-        beneficiary.transfer(this.balance);
+        owner.transfer(this.balance);
     }
 
     function refund() {
@@ -76,16 +93,17 @@ contract SimpleICO {
         }
     }
 
-
-
-    function transfer(address _to, uint _amount) {
-        
+    // assignment
+    function transfer(address _to, uint _amount) returns (bool) {
+        require(tokenBalance[msg.sender] > _amount);
+        tokenBalance[msg.sender] -= _amount;
+        tokenBalance[_to] += _amount;
+        return true;
     }
 
     function disable() {
         if(this.balance != 0) throw;
-        selfdestruct(beneficiary);
+        selfdestruct(owner);
     }
 
 }
-
