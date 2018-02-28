@@ -279,7 +279,7 @@ function refund(address) {
 }
 
 function contribute(address, amount) {
-    SimpleICOContract.contribute({from: address, value: amount*10^18}, function (err, result) {
+    SimpleICOContract.contribute({from: address, value: amount+" ether"}, function (err, result) {
         var trasactionHash = result;
         addRow(trasactionHash, address, amount, "Pending");
     });
