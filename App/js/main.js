@@ -213,14 +213,14 @@ function init() {
 
     SimpleICOContract = web3.eth.contract(abi);
 
-    SimpleICOContract = SimpleICOContract.at('0x5ad9593bfb606ea80a5c9abf1696aa815ef7cb7f');
+    SimpleICOContract = SimpleICOContract.at('0x0e9dd8cda4d66bb3b2b8280de1412e6a6d68f608');
 
     deadlineReachedEvent = SimpleICOContract.DeadlineReached({});
     contributionEvent = SimpleICOContract.Contribution({}, {fromBlock: 0, toBlock: 'latest'});
     goalReachedEvent = SimpleICOContract.GoalReached({});
 
     SimpleICOContract.goal.call(function (err, res) {
-        goal = parseInt(res.toString());
+        goal = web3.fromWei(parseInt(res.toString()));
     });
     SimpleICOContract.deadline.call(function (err, res) {
         deadline = parseInt(res.toString()) * 1000;
@@ -279,7 +279,7 @@ function refund(address) {
 }
 
 function contribute(address, amount) {
-    SimpleICOContract.contribute({from: address, value: amount}, function (err, result) {
+    SimpleICOContract.contribute({from: address, value: amount*10^18}, function (err, result) {
         var trasactionHash = result;
         addRow(trasactionHash, address, amount, "Pending");
     });
