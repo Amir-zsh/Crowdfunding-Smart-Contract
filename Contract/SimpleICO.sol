@@ -11,7 +11,7 @@ contract SimpleICO {
     uint public totalFundersNum;
 
     mapping (address => uint) funders;
-    
+    mapping (address => uint) tokenBalance;
     
 
     event Contribution(address indexed _contributor, uint _amount, uint _amountRemaining);
@@ -22,12 +22,17 @@ contract SimpleICO {
         require(now > _time);
         _;
     }
+    
+    modifier onlyBefore(uint _time) {
+        require(now < _time);
+        _;
+    }
 
     modifier onlyIfGoalReached() {
         require(this.balance >= goal);
         _;
     }
-
+    
     function SimpleICO(address _beneficiary, uint _totalSupply, uint _goal, uint _deadline) {
         //totalSuply init added;
         totalSupply = _totalSupply;
@@ -41,18 +46,23 @@ contract SimpleICO {
         return this.balance;
     }
 
-    function contribute() payable {
-        if (now > deadline) {
-            if (this.balance > goal) DeadlineReached(false);
-            else DeadlineReached(true);
-        }
+    function contribute() onlyBefore(deadline) payable {
+        require(this.balance < goal);
         if(funders[msg.sender] == 0) totalFundersNum += 1;
-        funders[msg.sender] += msg.value;
+        
+        uint contribuition_amount = msg.value;
+        funders[msg.sender] += contribuition_amount;
+        
         // What if balance passes goal?
-        Contribution(msg.sender, msg.value, goal - this.balance);
-        if (this.balance > goal) GoalReached();
+        if (this.balance > goal) {
+            GoalReached();
+            uint extra_amount = this.balance - goal;
+            msg.sender.transfer(extra_amount);
+            contribuition_amount = contribuition_amount - extra_amount;
+        }
+        Contribution(msg.sender, contribuition_amount, goal - this.balance);
     }
-
+    
     function payout() onlyAfter(deadline) onlyIfGoalReached() {
         beneficiary.transfer(this.balance);
     }
@@ -66,9 +76,16 @@ contract SimpleICO {
         }
     }
 
+
+
+    function transfer(address _to, uint _amount) {
+        
+    }
+
     function disable() {
         if(this.balance != 0) throw;
         selfdestruct(beneficiary);
     }
 
 }
+
