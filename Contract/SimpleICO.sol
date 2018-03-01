@@ -2,7 +2,7 @@ pragma solidity ^0.4.0;
 
 
 contract SimpleICO {
-    
+
     address public owner;
     uint public totalSupply;
     uint public goal;
@@ -13,17 +13,16 @@ contract SimpleICO {
 
     mapping (address => uint) funders;
     mapping (address => uint) tokenBalance;
-    
+
 
     event Contribution(address indexed _contributor, uint _amount, uint _amountRemaining);
-    event DeadlineReached();
     event GoalReached();
 
     modifier onlyAfter(uint _time) {
         require(now > _time);
         _;
     }
-    
+
     modifier onlyBefore(uint _time) {
         require(now < _time);
         _;
@@ -33,17 +32,17 @@ contract SimpleICO {
         require(this.balance >= goal);
         _;
     }
-    
-    function SimpleICO(uint _totalSupply, uint _goal, uint _deadline) {
+
+    function SimpleICO(uint _totalSupply, uint _deadline) {
         //totalSuply init added;
         owner = msg.sender;
         totalSupply = _totalSupply;
         tokenPrice = 10**16;
         tokenBalance[owner] = totalSupply;
-        goal = _goal*10**18;
+        goal = (totalSupply * tokenPrice * 7) / 10;
         deadline = now + _deadline;
     }
-    
+
     function test() {
         fake = 8 % 3;
     }
@@ -53,13 +52,13 @@ contract SimpleICO {
     }
 
     function contribute() onlyBefore(deadline) payable {
-        
+
         // current this.balance is previous this.balance + msg.value at the begining of the function
         require(this.balance - msg.value < goal);
         if(funders[msg.sender] == 0) totalFundersNum += 1;
-        
+
         uint contributionAmount = msg.value;
-        
+
         // What if balance passes goal?
         uint extraAmount = 0;
         if (this.balance > goal) {
@@ -67,14 +66,13 @@ contract SimpleICO {
             extraAmount = this.balance - goal;
             contributionAmount = contributionAmount - extraAmount;
         }
-        
+
         uint remainder = contributionAmount % tokenPrice;
-        contributionAmount -= remainder;
         uint purchasedTokens = contributionAmount / tokenPrice;
-        
+
         extraAmount += remainder;
         msg.sender.transfer(extraAmount);
-        
+
         funders[msg.sender] += contributionAmount;
         tokenBalance[msg.sender] += purchasedTokens;
         Contribution(msg.sender, contributionAmount, goal - this.balance);

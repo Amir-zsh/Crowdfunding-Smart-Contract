@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "remixd": "^0.1.5",
     "solc": "^0.4.20",
     "web3": "^1.0.0-beta.30"
   }
