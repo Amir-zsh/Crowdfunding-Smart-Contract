@@ -15,7 +15,9 @@
         /*right: 0;*/
     /*}*/
 /*}*/
-
+#user-balance{
+    overflow:hidden;
+}
 #withdraw-btn{
     display: none;
 }

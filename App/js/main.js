@@ -297,7 +297,9 @@ function init() {
     });
 
 }
-
+function getBalance(address){
+    return web3.fromWei(web3.eth.getBalance(address).toString());
+}
 
 function refund(address) {
     SimpleICOContract.refund({},{from: address}, function (err, transactionHash) {

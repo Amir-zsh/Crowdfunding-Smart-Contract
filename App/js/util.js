@@ -12,6 +12,7 @@ $(document).ready(function () {
     $contribute_btn = $("#contribution-btn");
     $refund_btn = $("#refund-btn");
     $sold_bar = $("#sold-bar");
+    $user_balance = $('#user-balance');
     $address.empty();
 
     init();
@@ -23,8 +24,8 @@ $(document).ready(function () {
         timer = setInterval(countDown, 1000);
     initAddresses(addresses);
 
-    // $address.change(addressChanged);
-    // $address.change();
+    $address.change(addressChanged);
+    $address.change();
     $contribute_btn.click(function () {
         var address = $address.val();
         var amount =  $value.val();
@@ -38,6 +39,13 @@ $(document).ready(function () {
 
 });
 
+
+function addressChanged() {
+    var address = $address.val();
+    var balance = getBalance(address);
+    $user_balance.html(balance);
+    console.log(balance);
+}
 function addRow(transactionHash,address , amount, status) {
     $('#contributions-table  > tbody:last-child').append('<tr id="'
         + transactionHash
