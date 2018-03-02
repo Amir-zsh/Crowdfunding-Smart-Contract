@@ -8,38 +8,11 @@ function init() {
         // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
         web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     }
-    // web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+    var goal,deadline,tokenPrice;
+    web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
     addresses = web3.eth.accounts;
 
     abi = [
-        {
-            "constant": true,
-            "inputs": [],
-            "name": "totalSupply",
-            "outputs": [
-                {
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "payable": false,
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "constant": true,
-            "inputs": [],
-            "name": "beneficiary",
-            "outputs": [
-                {
-                    "name": "",
-                    "type": "address"
-                }
-            ],
-            "payable": false,
-            "stateMutability": "view",
-            "type": "function"
-        },
         {
             "constant": true,
             "inputs": [],
@@ -57,11 +30,53 @@ function init() {
         {
             "constant": true,
             "inputs": [],
-            "name": "owner",
+            "name": "totalSupply",
             "outputs": [
                 {
                     "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "deadline",
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [],
+            "name": "disable",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [
+                {
+                    "name": "x",
                     "type": "address"
+                }
+            ],
+            "name": "getTokenBalance",
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "uint256"
                 }
             ],
             "payable": false,
@@ -97,9 +112,27 @@ function init() {
             "type": "function"
         },
         {
+            "constant": false,
+            "inputs": [],
+            "name": "refund",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [],
+            "name": "payout",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
             "constant": true,
             "inputs": [],
-            "name": "deadline",
+            "name": "tokenPrice",
             "outputs": [
                 {
                     "name": "",
@@ -111,50 +144,38 @@ function init() {
             "type": "function"
         },
         {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": true,
-                    "name": "_contributor",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "name": "_amount",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "name": "_amountRemaining",
-                    "type": "uint256"
-                }
-            ],
-            "name": "Contribution",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": false,
-                    "name": "_canRefund",
-                    "type": "bool"
-                }
-            ],
-            "name": "DeadlineReached",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
+            "constant": true,
             "inputs": [],
-            "name": "GoalReached",
-            "type": "event"
+            "name": "owner",
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
         },
         {
             "constant": false,
-            "inputs": [],
-            "name": "refund",
-            "outputs": [],
+            "inputs": [
+                {
+                    "name": "_to",
+                    "type": "address"
+                },
+                {
+                    "name": "_amount",
+                    "type": "uint256"
+                }
+            ],
+            "name": "transfer",
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
             "payable": false,
             "stateMutability": "nonpayable",
             "type": "function"
@@ -171,15 +192,7 @@ function init() {
         {
             "inputs": [
                 {
-                    "name": "_beneficiary",
-                    "type": "address"
-                },
-                {
                     "name": "_totalSupply",
-                    "type": "uint256"
-                },
-                {
-                    "name": "_goal",
                     "type": "uint256"
                 },
                 {
@@ -192,32 +205,65 @@ function init() {
             "type": "constructor"
         },
         {
-            "constant": false,
-            "inputs": [],
-            "name": "payout",
-            "outputs": [],
-            "payable": false,
-            "stateMutability": "nonpayable",
-            "type": "function"
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "name": "_contributor",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "name": "_purchasedTokens",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "name": "_amountRemaining",
+                    "type": "uint256"
+                }
+            ],
+            "name": "Contribution",
+            "type": "event"
         },
         {
-            "constant": false,
+            "anonymous": false,
             "inputs": [],
-            "name": "disable",
-            "outputs": [],
-            "payable": false,
-            "stateMutability": "nonpayable",
-            "type": "function"
+            "name": "GoalReached",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "name": "_contributor",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "name": "_amount",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "name": "_canRefund",
+                    "type": "bool"
+                }
+            ],
+            "name": "Refund",
+            "type": "event"
         }
     ]
 
     SimpleICOContract = web3.eth.contract(abi);
 
-    SimpleICOContract = SimpleICOContract.at('0x0e9dd8cda4d66bb3b2b8280de1412e6a6d68f608');
+    SimpleICOContract = SimpleICOContract.at('0xfcbed75c9a2dc4c2e77b800be92185094c2cd5aa');
 
-    deadlineReachedEvent = SimpleICOContract.DeadlineReached({});
+
     contributionEvent = SimpleICOContract.Contribution({}, {fromBlock: 0, toBlock: 'latest'});
     goalReachedEvent = SimpleICOContract.GoalReached({});
+
 
     SimpleICOContract.goal.call(function (err, res) {
         goal = web3.fromWei(parseInt(res.toString()));
@@ -225,21 +271,23 @@ function init() {
     SimpleICOContract.deadline.call(function (err, res) {
         deadline = parseInt(res.toString()) * 1000;
     });
+    SimpleICOContract.tokenPrice.call(function (err, res) {
+        tokenPrice = parseInt(res.toString()) * 1000;
+    });
 
     contributionEvent.watch(function (err, result) {
         if (err) {
             console.log(err);
             return;
         }
-        updateProgressBar(result.args._amountRemaining.toString());
-    });
-    deadlineReachedEvent.watch(function (err, result) {
-        if (err) {
-            console.log(err)
-            return;
-        }
-        temp = result;
-        ICOFinished(result.args._canRefund);
+        var hash = result.transactionHash;
+        var contributor = result.args._contributor.toString();
+        var amount = result.args._purchasedTokens.toString();
+        var amountRemaining = web3.fromWei(parseInt(result.args._amountRemaining.toString()));
+        console.log("log");
+        console.log(hash);
+        setAsDone(hash, contributor, amount);
+        updateProgressBar(amountRemaining);
     });
     goalReachedEvent.watch(function (err, result) {
         if (err) {
@@ -251,37 +299,42 @@ function init() {
 
 }
 
-function addressChanged() {
-    console.log("test");
-    if (contributionOnlyAddressEvent)
-        contributionOnlyAddressEvent.stopWatching();
-    contributionOnlyAddressEvent = SimpleICOContract.Contribution({_contributor: $(this).val()}, {
-        fromBlock: 0,
-        toBlock: 'latest'
-    });
-    emptyTable()
-    contributionOnlyAddressEvent.watch(function (err, result) {
-        if (err) {
-            console.log(err);
-            return;
-        }
-        var hash = result.transactionHash;
-        var contributor = result.args._contributor.toString()
-        var amount = result.args._amount.toString()
-        setAsDone(hash, contributor, amount);
-    });
-}
 
 function refund(address) {
-    SimpleICOContract.refund({from: address}, function () {
+    SimpleICOContract.refund({},{from: address}, function (err, transactionHash) {
+        if (err)
+            return ;
+        console.log(transactionHash);
+        if (refundEvent) refundEvent.stopWatching();
+        refundEvent = SimpleICOContract.Refund({_contributor: address});
+        refundEvent.watch(function (err, result) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            t = result;
+            var hash = result.transactionHash;
+            var contributor = result.args._contributor.toString()
+            var amount = result.args._amount.toString();
+            var canRefund = result.args._canRefund;
+            if (canRefund)
+                window.alert(contributor + " refunded " + amount / tokenPrice + " tokens");
+            else
+                window.alert("can't refund");
+            refundEvent.stopWatching();
+        });
     });
+
     console.log("refund")
 }
 
-function contribute(address, amount) {
-    SimpleICOContract.contribute({from: address, value: amount+" ether"}, function (err, result) {
-        var trasactionHash = result;
-        addRow(trasactionHash, address, amount, "Pending");
+function contribute(address, value) {
+    SimpleICOContract.contribute({},{from: address, value: web3.toWei(value, "ether")}, function (err, transactionHash) {
+        if (err)
+            return;
+        console.log("cont");
+        console.log(transactionHash);
+        addRow(transactionHash, address, "", "Pending");
     });
     console.log("contribute")
 }

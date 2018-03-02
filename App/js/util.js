@@ -2,7 +2,7 @@ var deadline, goal, temp, timer, addresses;
 var $address, $value,
     $contribute_btn, $refund_btn,
     $sold_bar, $status;
-var deadlineReachedEvent, contributionEvent, goalReachedEvent, contributionOnlyAddressEvent
+var deadlineReachedEvent, contributionEvent, goalReachedEvent, contributionOnlyAddressEvent ,refundEvent
 
 $(document).ready(function () {
     $status = $("#status");
@@ -15,30 +15,36 @@ $(document).ready(function () {
     $address.empty();
 
     init();
-    timer = setInterval(countDown, 1000);
+    var now = Math.floor(new Date().getTime());
+    var distance = deadline - now;
+    if (distance <= 0)
+        ICOFinished();
+    else
+        timer = setInterval(countDown, 1000);
     initAddresses(addresses);
 
-    $address.change(addressChanged);
-    $address.change();
+    // $address.change(addressChanged);
+    // $address.change();
     $contribute_btn.click(function () {
         var address = $address.val();
         var amount =  $value.val();
         contribute(address,amount);
     });
     $refund_btn.click(function () {
-        refund()
+        var address = $address.val();
+        refund(address);
     });
 
 
 });
 
-function addRow(transactionHash, address, contribution, status) {
+function addRow(transactionHash,address , amount, status) {
     $('#contributions-table  > tbody:last-child').append('<tr id="'
         + transactionHash
         + '"><td>'
-        + transactionHash +
+        + address +
         '</td><td>'
-        + contribution
+        + amount
         + '</td>'
         + '<td>' + status + '</td>'
         + '</tr>');
@@ -63,6 +69,7 @@ function countDown() {
         $timer.html(0 + ":" + 0 + ":"
             + 0 + ":" + 0);
         clearInterval(timer);
+        ICOFinished();
     }
 
 }
@@ -70,6 +77,7 @@ function countDown() {
 function setAsDone(hash, contributor, amount) {
     $transaction = $("#" + hash);
     if ($transaction.length) {
+        $transaction.children().eq(1).html(amount);
         $transaction.children().last().html("Done");
     }
     else {
@@ -85,20 +93,12 @@ function updateProgressBar(amounRemaining) {
     });
 }
 
-function ICOFinished(canrRefund) {
-    if (canrRefund) {
+function ICOFinished() {
         $refund_btn.removeAttr("disabled");
         $status.removeClass("alert-info");
         $status.addClass("alert-danger");
-        $status.html("Finished: Goal not Reached")
+        $status.html("Finished");
         refundPermission = true;
-    }
-    else {
-        $status.removeClass("alert-info");
-        $status.addClass("alert-success");
-        $status.html("Finished: Goal Reached");
-        refundPermission = false;
-    }
 }
 
 

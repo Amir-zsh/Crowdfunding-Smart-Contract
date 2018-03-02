@@ -9,14 +9,14 @@ contract SimpleICO {
     uint public tokenPrice;
     uint public deadline;
     uint public totalFundersNum;
-    fixed public fake;
 
-    mapping (address => uint) funders;
+
     mapping (address => uint) tokenBalance;
 
 
-    event Contribution(address indexed _contributor, uint _amount, uint _amountRemaining);
+    event Contribution(address indexed _contributor, uint _purchasedTokens, uint _amountRemaining);
     event GoalReached();
+    event Refund(address indexed _contributor,uint _amount, bool _canRefund);
 
     modifier onlyAfter(uint _time) {
         require(now > _time);
@@ -33,8 +33,13 @@ contract SimpleICO {
         _;
     }
 
-    function SimpleICO(uint _totalSupply, uint _deadline) {
+    function getTokenBalance(address x) view returns(uint){
+        return tokenBalance[x];
+    }
+
+    function SimpleICO(uint _totalSupply, uint256 _deadline) {
         //totalSuply init added;
+        totalFundersNum = 1;
         owner = msg.sender;
         totalSupply = _totalSupply;
         tokenPrice = 10**16;
@@ -43,9 +48,6 @@ contract SimpleICO {
         deadline = now + _deadline;
     }
 
-    function test() {
-        fake = 8 % 3;
-    }
 
     function currentFunding() view returns (uint) {
         return this.balance;
@@ -55,7 +57,7 @@ contract SimpleICO {
 
         // current this.balance is previous this.balance + msg.value at the begining of the function
         require(this.balance - msg.value < goal);
-        if(funders[msg.sender] == 0) totalFundersNum += 1;
+        if(tokenBalance[msg.sender] == 0) totalFundersNum += 1;
 
         uint contributionAmount = msg.value;
 
@@ -73,9 +75,9 @@ contract SimpleICO {
         extraAmount += remainder;
         msg.sender.transfer(extraAmount);
 
-        funders[msg.sender] += contributionAmount;
+        tokenBalance[owner] -= purchasedTokens;
         tokenBalance[msg.sender] += purchasedTokens;
-        Contribution(msg.sender, contributionAmount, goal - this.balance);
+        Contribution(msg.sender, purchasedTokens, goal - this.balance);
     }
 
     function payout() onlyAfter(deadline) onlyIfGoalReached() {
@@ -83,11 +85,15 @@ contract SimpleICO {
     }
 
     function refund() {
-        var amount = funders[msg.sender];
+        var amount = tokenBalance[msg.sender];
         if(now > deadline && this.balance < goal && amount != 0) {
             // re-entrancy attack resistant
-            funders[msg.sender] = 0;
-            msg.sender.transfer(amount);
+            tokenBalance[msg.sender] = 0;
+            msg.sender.transfer(amount * tokenPrice);
+            Refund(msg.sender,amount,true);
+        }
+        else{
+            Refund(msg.sender,amount,false);
         }
     }
 
