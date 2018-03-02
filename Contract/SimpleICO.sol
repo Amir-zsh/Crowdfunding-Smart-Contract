@@ -39,7 +39,6 @@ contract SimpleICO {
 
     function SimpleICO(uint _totalSupply, uint256 _deadline) {
         //totalSuply init added;
-        totalFundersNum = 1;
         owner = msg.sender;
         totalSupply = _totalSupply;
         tokenPrice = 10**16;
