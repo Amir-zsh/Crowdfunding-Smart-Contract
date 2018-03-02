@@ -300,6 +300,7 @@ function init() {
         var amountRemaining = parseInt(result.args._tokensRemaining.toString());
         setAsDone(hash, contributor, amount);
         updateProgressBar(amountRemaining);
+        updateBalance();
     });
     goalReachedEvent.watch(function (err, result) {
         if (err) {

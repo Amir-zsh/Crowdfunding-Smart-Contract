@@ -25,7 +25,7 @@ window.addEventListener('load', function() {
         timer = setInterval(countDown, 1000);
     initAddresses(addresses);
 
-    $address.change(addressChanged);
+    $address.change(updateBalance);
     $address.change();
     $contribute_btn.click(function () {
         var address = $address.val();
@@ -75,12 +75,14 @@ window.addEventListener('load', function() {
 // });
 
 
-function addressChanged() {
+
+function updateBalance(){
     var address = $address.val();
     var balance = getBalance(address);
     $user_balance.html(balance);
     console.log(balance);
 }
+
 function addRow(transactionHash,address , amount, status) {
     $('#contributions-table  > tbody:last-child').append('<tr id="'
         + transactionHash
