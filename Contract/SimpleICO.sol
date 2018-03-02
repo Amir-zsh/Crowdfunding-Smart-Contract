@@ -3,6 +3,10 @@ pragma solidity ^0.4.0;
 
 contract SimpleICO {
 
+    //***********************************************
+    //****************** variables ******************
+    //***********************************************
+    
     address public owner;
     uint public totalSupply;
     uint public goal;
@@ -13,10 +17,18 @@ contract SimpleICO {
 
     mapping (address => uint) tokenBalance;
 
-
-    event Contribution(address indexed _contributor, uint _purchasedTokens, uint _amountRemaining);
+    
+    //***********************************************
+    //****************** events *********************
+    //***********************************************
+    
+    event Contribution(address indexed _contributor, uint _purchasedTokens, uint _tokensRemaining);
     event GoalReached();
     event Refund(address indexed _contributor,uint _amount, bool _canRefund);
+    
+    //***********************************************
+    //****************** modifiers ******************
+    //***********************************************
 
     modifier onlyAfter(uint _time) {
         require(now > _time);
@@ -32,10 +44,10 @@ contract SimpleICO {
         require(this.balance >= goal);
         _;
     }
-
-    function getTokenBalance(address x) view returns(uint){
-        return tokenBalance[x];
-    }
+    
+    //*************************************************
+    //****************** Constructor ******************
+    //*************************************************
 
     function SimpleICO(uint _totalSupply, uint256 _deadline) {
         //totalSuply init added;
@@ -47,10 +59,27 @@ contract SimpleICO {
         deadline = now + _deadline;
     }
 
+    
+    //****************************************************
+    //****************** Getter/Setters ******************
+    //****************************************************
+    
+    function getTokenBalance(address x) view returns(uint){
+        return tokenBalance[x];
+    }
 
     function currentFunding() view returns (uint) {
         return this.balance;
     }
+    
+    function getGoalAsTokens() view returns (uint) {
+        return (totalSupply * 7) / 10;
+    }
+    
+    
+    //***********************************************
+    //****************** functions ******************
+    //***********************************************
 
     function contribute() onlyBefore(deadline) payable {
 
@@ -76,13 +105,13 @@ contract SimpleICO {
 
         tokenBalance[owner] -= purchasedTokens;
         tokenBalance[msg.sender] += purchasedTokens;
-        Contribution(msg.sender, purchasedTokens, goal - this.balance);
+        Contribution(msg.sender, purchasedTokens, (goal - this.balance) / tokenPrice);
     }
-
+    
     function payout() onlyAfter(deadline) onlyIfGoalReached() {
         owner.transfer(this.balance);
     }
-
+    
     function refund() {
         var amount = tokenBalance[msg.sender];
         if(now > deadline && this.balance < goal && amount != 0) {
@@ -96,16 +125,8 @@ contract SimpleICO {
         }
     }
 
-    // assignment
-    function transfer(address _to, uint _amount) returns (bool) {
-        require(tokenBalance[msg.sender] > _amount);
-        tokenBalance[msg.sender] -= _amount;
-        tokenBalance[_to] += _amount;
-        return true;
-    }
-
     function disable() {
-        if(this.balance != 0) throw;
+        if(this.balance != 0) revert();
         selfdestruct(owner);
     }
 
