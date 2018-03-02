@@ -4,7 +4,8 @@ var $address, $value,
     $sold_bar, $status;
 var deadlineReachedEvent, contributionEvent, goalReachedEvent, contributionOnlyAddressEvent ,refundEvent
 
-$(document).ready(function () {
+window.addEventListener('load', function() {
+
     $status = $("#status");
     $timer = $("#timer");
     $address = $("#address");
@@ -37,7 +38,41 @@ $(document).ready(function () {
     });
 
 
-});
+})
+// $(window).on(,function () {
+//     $status = $("#status");
+//     $timer = $("#timer");
+//     $address = $("#address");
+//     $value = $("#value");
+//     $contribute_btn = $("#contribution-btn");
+//     $refund_btn = $("#refund-btn");
+//     $sold_bar = $("#sold-bar");
+//     $user_balance = $('#user-balance');
+//     $address.empty();
+//
+//     init();
+//     var now = Math.floor(new Date().getTime());
+//     var distance = deadline - now;
+//     if (distance <= 0)
+//         ICOFinished();
+//     else
+//         timer = setInterval(countDown, 1000);
+//     initAddresses(addresses);
+//
+//     $address.change(addressChanged);
+//     $address.change();
+//     $contribute_btn.click(function () {
+//         var address = $address.val();
+//         var amount =  $value.val();
+//         contribute(address,amount);
+//     });
+//     $refund_btn.click(function () {
+//         var address = $address.val();
+//         refund(address);
+//     });
+//
+//
+// });
 
 
 function addressChanged() {
