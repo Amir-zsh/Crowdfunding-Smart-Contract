@@ -129,7 +129,10 @@ function setAsDone(hash, contributor, amount) {
 }
 
 function updateProgressBar(amounRemaining) {
+    console.log(amounRemaining);
+    console.log(goal);
     bar_width = 1 - parseInt(amounRemaining) / goal;
+    console.log(bar_width);
     $sold_bar.animate({
         width: (bar_width * 100) + "%"
     }, 100, function () {
